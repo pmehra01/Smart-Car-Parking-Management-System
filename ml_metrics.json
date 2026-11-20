@@ -1,0 +1,18 @@
+{
+  "model_name": "Random Forest Regressor (Scikit-Learn)",
+  "features": [
+    "facility_idx",
+    "hour",
+    "day_of_week",
+    "is_weekend",
+    "is_peak"
+  ],
+  "train_samples": 4416,
+  "test_samples": 1344,
+  "baseline_mae": 3.85,
+  "baseline_rmse": 4.84,
+  "model_mae": 3.83,
+  "model_rmse": 4.83,
+  "r2_score": 0.9731,
+  "accuracy_percent": 96.17
+}

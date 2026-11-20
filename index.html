@@ -1,0 +1,1593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Car Parking Management System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: { 50: '#eef2ff', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca', 900: '#1e1b4b' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .drawer-transition {
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-indigo-500 selection:text-white">
+
+  <!-- ==================== AUTHENTICATION OVERLAY (LOGIN & SIGNUP) ==================== -->
+  <div id="auth-container" class="fixed inset-0 z-50 bg-slate-950 flex items-center justify-center p-4 overflow-y-auto">
+    
+    <!-- LOGIN CARD -->
+    <div id="login-card" class="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-8 shadow-2xl space-y-6 relative">
+      <div class="text-center space-y-2">
+        <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center shadow-xl shadow-indigo-500/20 mx-auto">
+          <i class="fa-solid fa-square-parking text-white text-2xl"></i>
+        </div>
+        <h2 class="text-2xl font-extrabold text-white">SmartPark AI</h2>
+        <p class="text-xs text-slate-400">Sign in with your Email or User ID to continue</p>
+      </div>
+
+      <!-- Quick Demo Access Chips -->
+      <div class="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-3 space-y-2 text-xs">
+        <span class="text-[11px] font-semibold text-slate-400 block"><i class="fa-solid fa-bolt text-amber-400 mr-1"></i> Quick 1-Click Demo Login:</span>
+        <div class="grid grid-cols-2 gap-2">
+          <button onclick="fillDemo('user')" class="py-1.5 px-2.5 rounded-xl bg-slate-700/80 hover:bg-slate-700 text-slate-200 text-[11px] font-medium transition text-left flex items-center space-x-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <span>Customer Demo</span>
+          </button>
+          <button onclick="fillDemo('admin')" class="py-1.5 px-2.5 rounded-xl bg-indigo-950/80 hover:bg-indigo-900/80 text-indigo-300 text-[11px] font-medium transition text-left flex items-center space-x-1.5 border border-indigo-500/30">
+            <span class="w-2 h-2 rounded-full bg-indigo-400"></span>
+            <span>Admin Demo</span>
+          </button>
+        </div>
+      </div>
+
+      <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">Email or User ID</label>
+          <div class="relative">
+            <i class="fa-solid fa-user absolute left-3.5 top-3 text-slate-500 text-xs"></i>
+            <input type="text" id="login-id" placeholder="e.g. user@example.com or admin@parking.com" class="w-full bg-slate-950 border border-slate-700 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">Password</label>
+          <div class="relative">
+            <i class="fa-solid fa-lock absolute left-3.5 top-3 text-slate-500 text-xs"></i>
+            <input type="password" id="login-password" placeholder="••••••••" class="w-full bg-slate-950 border border-slate-700 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+          </div>
+        </div>
+
+        <button type="submit" class="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm transition shadow-lg shadow-indigo-600/30 flex items-center justify-center space-x-2">
+          <span>Sign In</span>
+          <i class="fa-solid fa-arrow-right text-xs"></i>
+        </button>
+      </form>
+
+      <!-- Clickable Line to Signup -->
+      <div class="text-center pt-2 border-t border-slate-800 text-xs text-slate-400">
+        Don't have an account? 
+        <button onclick="showSignupView()" class="text-indigo-400 hover:text-indigo-300 font-bold ml-1 transition underline">
+          Signup
+        </button>
+      </div>
+    </div>
+
+    <!-- SIGNUP CARD (OPENS IN SAME TAB) -->
+    <div id="signup-card" class="hidden bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-8 shadow-2xl space-y-6 relative">
+      <div class="text-center space-y-1">
+        <h2 class="text-2xl font-extrabold text-white">Create an Account</h2>
+        <p class="text-xs text-slate-400">Choose your role to get started</p>
+      </div>
+
+      <!-- Role Selector (Customer vs Admin) -->
+      <div class="grid grid-cols-2 gap-2 p-1.5 bg-slate-950 rounded-2xl border border-slate-800">
+        <button type="button" onclick="selectSignupRole('user')" id="role-btn-user" class="py-2.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center space-x-2 bg-indigo-600 text-white shadow">
+          <i class="fa-solid fa-car"></i>
+          <span>Customer</span>
+        </button>
+        <button type="button" onclick="selectSignupRole('admin')" id="role-btn-admin" class="py-2.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center space-x-2 text-slate-400 hover:text-white">
+          <i class="fa-solid fa-shield-halved"></i>
+          <span>Admin</span>
+        </button>
+      </div>
+
+      <form id="signup-form" onsubmit="handleSignup(event)" class="space-y-4">
+        <!-- Common Name Field -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">Full Name</label>
+          <input type="text" id="signup-name" placeholder="e.g. John Doe" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+        </div>
+
+        <!-- Customer Specific Fields -->
+        <div id="customer-fields" class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Phone Number</label>
+            <input type="tel" id="signup-phone" placeholder="e.g. +91 98765 43210" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Email Address</label>
+            <input type="email" id="signup-email" placeholder="e.g. john@example.com" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          </div>
+        </div>
+
+        <!-- Admin Specific Fields -->
+        <div id="admin-fields" class="hidden space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Admin User ID / Email</label>
+            <input type="text" id="signup-admin-id" placeholder="e.g. admin_01 or admin@company.com" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          </div>
+        </div>
+
+        <!-- Password Field -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">Password</label>
+          <input type="password" id="signup-password" placeholder="Create a password" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+        </div>
+
+        <button type="submit" class="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm transition shadow-lg shadow-indigo-600/30 flex items-center justify-center space-x-2">
+          <span>Create Account</span>
+          <i class="fa-solid fa-user-plus text-xs"></i>
+        </button>
+      </form>
+
+      <!-- Back to Login -->
+      <div class="text-center pt-2 border-t border-slate-800 text-xs text-slate-400">
+        Already have an account? 
+        <button onclick="showLoginView()" class="text-indigo-400 hover:text-indigo-300 font-bold ml-1 transition underline">
+          Login
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== TOP NAVIGATION BAR ==================== -->
+  <header class="border-b border-slate-800 bg-slate-950/80 backdrop-blur sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
+      
+      <!-- Logo -->
+      <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('find')">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+          <i class="fa-solid fa-square-parking text-white text-xl"></i>
+        </div>
+        <div>
+          <span class="font-extrabold text-lg tracking-tight bg-gradient-to-r from-white via-slate-200 to-indigo-300 bg-clip-text text-transparent">SmartPark AI</span>
+          <span id="role-pill" class="text-[10px] px-2 py-0.5 ml-1.5 rounded-full bg-emerald-500/20 text-emerald-400 font-semibold border border-emerald-500/30">Customer</span>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs (Role-Filtered) -->
+      <nav class="hidden md:flex items-center space-x-1">
+        <!-- Customer & Admin -->
+        <button onclick="switchTab('find')" id="tab-find" class="nav-btn px-3 py-2 rounded-lg text-sm font-medium transition text-indigo-400 bg-slate-800/80">
+          <i class="fa-solid fa-magnifying-glass mr-1.5"></i> Find Parking
+        </button>
+        <button onclick="switchTab('reserve')" id="tab-reserve" class="nav-btn px-3 py-2 rounded-lg text-sm font-medium transition text-slate-400 hover:text-white hover:bg-slate-800/50">
+          <i class="fa-solid fa-calendar-check mr-1.5"></i> Reserve Slot
+        </button>
+        <button onclick="switchTab('tickets')" id="tab-tickets" class="nav-btn px-3 py-2 rounded-lg text-sm font-medium transition text-slate-400 hover:text-white hover:bg-slate-800/50">
+          <i class="fa-solid fa-qrcode mr-1.5"></i> My QR Tickets
+        </button>
+        <button onclick="switchTab('predict')" id="tab-predict" class="nav-btn px-3 py-2 rounded-lg text-sm font-medium transition text-slate-400 hover:text-white hover:bg-slate-800/50">
+          <i class="fa-solid fa-brain mr-1.5"></i> AI Predictor
+        </button>
+
+        <!-- Admin Only Tabs -->
+        <button onclick="switchTab('kiosk')" id="tab-kiosk" class="admin-only nav-btn px-3 py-2 rounded-lg text-sm font-medium transition text-slate-400 hover:text-white hover:bg-slate-800/50">
+          <i class="fa-solid fa-door-open mr-1.5"></i> Gate Kiosk
+        </button>
+        <button onclick="switchTab('admin')" id="tab-admin" class="admin-only nav-btn px-3 py-2 rounded-lg text-sm font-medium transition text-slate-400 hover:text-white hover:bg-slate-800/50">
+          <i class="fa-solid fa-chart-pie mr-1.5"></i> Admin Dashboard
+        </button>
+      </nav>
+
+      <!-- Drawable Profile Button (Opens Slide-out Drawer) -->
+      <button onclick="openProfileDrawer()" class="flex items-center space-x-2.5 p-1.5 pr-3 rounded-full bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 transition focus:outline-none">
+        <div id="nav-avatar" class="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold text-xs shadow">
+          U
+        </div>
+        <div class="hidden sm:flex flex-col text-left">
+          <span id="nav-user-name" class="text-xs font-bold text-white leading-tight">User</span>
+          <span id="nav-user-sub" class="text-[10px] text-slate-400 leading-tight">Profile & Account</span>
+        </div>
+        <i class="fa-solid fa-angle-right text-slate-400 text-xs ml-1"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- ==================== DRAWABLE PROFILE DRAWER ==================== -->
+  <div id="drawer-backdrop" onclick="closeProfileDrawer()" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm transition-opacity opacity-0"></div>
+
+  <aside id="profile-drawer" class="fixed right-0 top-0 h-full w-80 sm:w-96 bg-slate-900 border-l border-slate-800 z-50 shadow-2xl flex flex-col justify-between transform translate-x-full drawer-transition">
+    
+    <!-- Drawer Header -->
+    <div class="p-6 border-b border-slate-800 flex items-center justify-between">
+      <div class="flex items-center space-x-2.5">
+        <i class="fa-solid fa-user-circle text-indigo-400 text-xl"></i>
+        <h3 class="font-extrabold text-white text-lg">My Profile</h3>
+      </div>
+      <button onclick="closeProfileDrawer()" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition">
+        <i class="fa-solid fa-xmark text-sm"></i>
+      </button>
+    </div>
+
+    <!-- Drawer Body -->
+    <div class="p-6 overflow-y-auto space-y-6 flex-1">
+      
+      <!-- User Summary Badge -->
+      <div class="bg-slate-950/80 border border-slate-800 rounded-2xl p-5 text-center space-y-2">
+        <div id="drawer-avatar-lg" class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-500 text-white font-extrabold text-2xl flex items-center justify-center mx-auto shadow-lg shadow-indigo-600/30">
+          U
+        </div>
+        <div>
+          <h4 id="drawer-name" class="text-base font-bold text-white">Full Name</h4>
+          <p id="drawer-email" class="text-xs text-slate-400">user@example.com</p>
+        </div>
+        <span id="drawer-role-badge" class="inline-block text-[11px] font-bold px-3 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+          Customer Account
+        </span>
+      </div>
+
+      <!-- Account Section -->
+      <div class="space-y-3">
+        <div class="flex items-center justify-between text-xs font-bold text-slate-400 uppercase tracking-wider">
+          <span>Account Details</span>
+          <i class="fa-solid fa-id-card text-indigo-400"></i>
+        </div>
+
+        <div class="bg-slate-800/50 border border-slate-800 rounded-2xl p-4 space-y-3 text-xs">
+          <div>
+            <span class="text-slate-400 block text-[11px]">User Name</span>
+            <span id="account-name-val" class="font-semibold text-white">User Name</span>
+          </div>
+          <div>
+            <span class="text-slate-400 block text-[11px]">Email / User ID</span>
+            <span id="account-email-val" class="font-semibold text-white font-mono">user@example.com</span>
+          </div>
+          <div id="account-phone-row">
+            <span class="text-slate-400 block text-[11px]">Phone Number</span>
+            <span id="account-phone-val" class="font-semibold text-white">+91 9876543210</span>
+          </div>
+          <div>
+            <span class="text-slate-400 block text-[11px]">Access Privilege</span>
+            <span id="account-role-val" class="font-semibold text-indigo-300">Customer (Slot Booking)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Delete Account Option (Inside Account) -->
+      <div class="pt-2">
+        <button onclick="confirmDeleteAccount()" class="w-full py-2.5 px-4 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-400 hover:text-rose-300 text-xs font-semibold transition flex items-center justify-center space-x-2">
+          <i class="fa-solid fa-trash-can"></i>
+          <span>Delete Account</span>
+        </button>
+        <p class="text-[10px] text-slate-500 text-center mt-1.5">Permanently deletes account and personal booking history.</p>
+      </div>
+
+    </div>
+
+    <!-- Drawer Footer (Logout Option) -->
+    <div class="p-6 border-t border-slate-800 bg-slate-950/50 space-y-2">
+      <button onclick="handleLogout()" class="w-full py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white text-xs font-bold transition flex items-center justify-center space-x-2 border border-slate-700">
+        <i class="fa-solid fa-arrow-right-from-bracket text-rose-400"></i>
+        <span>Logout from SmartPark</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ==================== MAIN CONTENT AREA ==================== -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+
+    <!-- TAB 1: FIND PARKING & LIVE SLOTS -->
+    <section id="view-find" class="space-y-6">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 class="text-2xl sm:text-3xl font-extrabold text-white">Find Nearby Smart Parking</h1>
+          <p class="text-slate-400 text-sm mt-1">Live recorded availability across parking locations. Select a spot and reserve instantly.</p>
+        </div>
+        <div class="flex items-center space-x-2">
+          <div class="relative w-full sm:w-64">
+            <i class="fa-solid fa-search absolute left-3 top-3 text-slate-500 text-sm"></i>
+            <input type="text" id="facility-search" oninput="filterFacilities()" placeholder="Search location or area..." class="w-full bg-slate-800/80 border border-slate-700 rounded-xl pl-9 pr-4 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          </div>
+          <button onclick="loadFacilities()" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-sm transition" title="Refresh">
+            <i class="fa-solid fa-arrows-rotate"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Facilities Grid -->
+      <div id="facilities-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <!-- Interactive Slot Grid Modal -->
+      <div id="slot-modal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+          <div class="p-6 border-b border-slate-800 flex items-center justify-between">
+            <div>
+              <h3 id="modal-fac-name" class="text-xl font-bold text-white">Facility Slots</h3>
+              <p id="modal-fac-address" class="text-xs text-slate-400 mt-0.5"></p>
+            </div>
+            <button onclick="closeSlotModal()" class="text-slate-400 hover:text-white text-xl">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+
+          <div class="p-6 overflow-y-auto space-y-4">
+            <!-- Legend -->
+            <div class="flex items-center space-x-4 text-xs font-medium pb-2 border-b border-slate-800">
+              <span class="flex items-center"><span class="w-3 h-3 rounded bg-emerald-500 mr-1.5"></span> Available</span>
+              <span class="flex items-center"><span class="w-3 h-3 rounded bg-amber-500 mr-1.5"></span> Reserved</span>
+              <span class="flex items-center"><span class="w-3 h-3 rounded bg-rose-500 mr-1.5"></span> Occupied</span>
+              <span class="text-slate-500 ml-auto">Click green slot to reserve</span>
+            </div>
+
+            <!-- Admin Slot Adder (Shown only to Admin) -->
+            <div id="admin-add-slot-bar" class="hidden bg-slate-800/60 p-3 rounded-xl border border-slate-700/80 flex items-center space-x-3 text-xs">
+              <span class="font-bold text-indigo-400 shrink-0"><i class="fa-solid fa-plus-circle mr-1"></i> Add Slot:</span>
+              <input type="text" id="admin-new-slot-num" placeholder="Slot No (e.g. P-51)" class="bg-slate-950 border border-slate-700 px-3 py-1.5 rounded-lg text-white font-mono uppercase text-xs w-28">
+              <select id="admin-new-slot-type" class="bg-slate-950 border border-slate-700 px-3 py-1.5 rounded-lg text-white text-xs">
+                <option value="Regular">Regular</option>
+                <option value="EV Charging">EV Charging</option>
+                <option value="Accessible">Accessible</option>
+              </select>
+              <button onclick="adminAddSlotDirect()" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold">Add Slot</button>
+            </div>
+
+            <div id="modal-slots-grid" class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+
+          <div class="p-4 bg-slate-950/60 border-t border-slate-800 flex justify-end">
+            <button onclick="closeSlotModal()" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 text-sm">Close</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: ADVANCE SLOT RESERVATION -->
+    <section id="view-reserve" class="hidden max-w-3xl mx-auto space-y-6">
+      <div class="text-center">
+        <h1 class="text-2xl sm:text-3xl font-extrabold text-white">Reserve Parking Slot</h1>
+        <p class="text-slate-400 text-sm mt-1">Book your spot in advance with server-side overlap conflict protection.</p>
+      </div>
+
+      <div class="bg-slate-800/60 border border-slate-700/80 rounded-2xl p-6 sm:p-8 backdrop-blur shadow-xl">
+        <form id="booking-form" onsubmit="submitBooking(event)" class="space-y-5">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Select Parking Facility</label>
+            <select id="book-facility" onchange="onFacilityChangeForBooking()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+              <option value="">-- Choose Facility --</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Select Available Slot</label>
+            <select id="book-slot" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+              <option value="">-- Choose Slot --</option>
+            </select>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1">Vehicle Registration Number</label>
+              <input type="text" id="book-veh-num" placeholder="e.g. KA-01-AB-1234" value="KA-01-MJ-5566" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white uppercase focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1">Vehicle Type</label>
+              <select id="book-veh-type" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <option value="Car">Sedan / Hatchback</option>
+                <option value="SUV">SUV</option>
+                <option value="EV">Electric Vehicle (EV)</option>
+                <option value="Bike">Motorcycle / Scooter</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1">Reservation Start Time</label>
+              <input type="datetime-local" id="book-start-time" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1">Reservation End Time</label>
+              <input type="datetime-local" id="book-end-time" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+            </div>
+          </div>
+
+          <!-- Price Calculation Box -->
+          <div class="bg-indigo-950/40 border border-indigo-500/30 rounded-xl p-4 flex items-center justify-between">
+            <div>
+              <span class="text-xs text-indigo-300 font-medium">Estimated Parking Fee</span>
+              <p class="text-xl font-bold text-white mt-0.5" id="booking-est-fee">₹ 80.00</p>
+            </div>
+            <div class="text-right text-xs text-indigo-400">
+              <span id="booking-est-duration">2 Hours Duration</span>
+              <p class="text-[11px] text-slate-400 mt-0.5">Digital Tariff • Auto-calculated</p>
+            </div>
+          </div>
+
+          <button type="submit" class="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm transition shadow-lg shadow-indigo-600/30 flex items-center justify-center space-x-2">
+            <i class="fa-solid fa-qrcode"></i>
+            <span>Confirm Booking & Issue QR Ticket</span>
+          </button>
+        </form>
+      </div>
+
+      <!-- Booking Result Success Box -->
+      <div id="booking-success-box" class="hidden bg-emerald-950/40 border border-emerald-500/40 rounded-2xl p-6 text-center space-y-4">
+        <div class="w-12 h-12 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto text-xl">
+          <i class="fa-solid fa-circle-check"></i>
+        </div>
+        <div>
+          <h3 class="text-lg font-bold text-white">Booking Confirmed!</h3>
+          <p class="text-xs text-slate-300 mt-1" id="success-msg"></p>
+        </div>
+        <div class="flex justify-center">
+          <img id="success-qr-img" class="w-48 h-48 bg-white p-2 rounded-xl shadow-lg" src="" alt="QR Code">
+        </div>
+        <button onclick="switchTab('tickets')" class="px-5 py-2 rounded-xl bg-indigo-600 text-white text-xs font-semibold">
+          View in My Tickets
+        </button>
+      </div>
+    </section>
+
+    <!-- TAB 3: MY DIGITAL QR TICKETS -->
+    <section id="view-tickets" class="hidden space-y-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-2xl sm:text-3xl font-extrabold text-white">My Digital QR Tickets</h1>
+          <p class="text-slate-400 text-sm mt-1">Show this QR ticket at the gate for fast, touchless entry.</p>
+        </div>
+        <button onclick="loadUserTickets()" class="px-3 py-2 rounded-xl bg-slate-800 text-slate-300 border border-slate-700 text-sm">
+          <i class="fa-solid fa-arrows-rotate mr-1"></i> Refresh
+        </button>
+      </div>
+
+      <div id="tickets-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Rendered dynamically -->
+      </div>
+    </section>
+
+    <!-- TAB 4: GATE KIOSK (ADMIN ONLY) -->
+    <section id="view-kiosk" class="hidden max-w-3xl mx-auto space-y-6">
+      <div class="text-center">
+        <h1 class="text-2xl sm:text-3xl font-extrabold text-white">Gate Kiosk Terminal</h1>
+        <p class="text-slate-400 text-sm mt-1">Automated gate check-in, check-out, and duration billing terminal (Admin privilege).</p>
+      </div>
+
+      <div class="bg-slate-800/60 border border-slate-700/80 rounded-2xl p-6 sm:p-8 backdrop-blur shadow-xl space-y-6">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-2">Scan QR Code or Enter Booking ID</label>
+          <div class="flex space-x-2">
+            <input type="text" id="kiosk-booking-id" placeholder="e.g. BK-2026-DEMO01" value="BK-2026-DEMO01" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white uppercase focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono">
+            <button onclick="fetchKioskBooking()" class="px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-white rounded-xl text-sm font-medium">
+              Verify
+            </button>
+          </div>
+        </div>
+
+        <!-- Booking Details Preview in Kiosk -->
+        <div id="kiosk-details-card" class="bg-slate-900 border border-slate-700/80 rounded-xl p-5 space-y-4">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+            <div>
+              <span class="text-xs text-slate-400">Booking Status</span>
+              <p class="text-base font-bold text-white mt-0.5" id="kiosk-status">Confirmed</p>
+            </div>
+            <div class="text-right">
+              <span class="text-xs text-slate-400">Assigned Slot</span>
+              <p class="text-base font-bold text-indigo-400 mt-0.5" id="kiosk-slot">P-05</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 text-xs">
+            <div>
+              <span class="text-slate-400">Vehicle:</span>
+              <span class="font-bold text-white ml-1" id="kiosk-veh">KA-01-MJ-5566</span>
+            </div>
+            <div>
+              <span class="text-slate-400">Facility:</span>
+              <span class="font-bold text-white ml-1" id="kiosk-fac">City Center Mall Parking</span>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="grid grid-cols-2 gap-4 pt-2">
+            <button onclick="kioskCheckIn()" id="kiosk-btn-in" class="py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm transition flex items-center justify-center space-x-2 shadow-lg shadow-emerald-600/30">
+              <i class="fa-solid fa-arrow-right-to-bracket"></i>
+              <span>Gate Entry (Check-In)</span>
+            </button>
+            <button onclick="kioskCheckOut()" id="kiosk-btn-out" class="py-3 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-semibold text-sm transition flex items-center justify-center space-x-2 shadow-lg shadow-violet-600/30">
+              <i class="fa-solid fa-arrow-right-from-bracket"></i>
+              <span>Gate Exit & Bill (Check-Out)</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Gate Feedback Box -->
+        <div id="kiosk-gate-alert" class="hidden p-4 rounded-xl border text-sm flex items-start space-x-3">
+          <i class="fa-solid fa-circle-info text-base mt-0.5" id="kiosk-alert-icon"></i>
+          <div id="kiosk-alert-text"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 5: AI DEMAND PREDICTOR -->
+    <section id="view-predict" class="hidden space-y-6">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 class="text-2xl sm:text-3xl font-extrabold text-white">Machine Learning Parking Predictor</h1>
+          <p class="text-slate-400 text-sm mt-1">Trained Random Forest Regressor analyzing historical day, hour, and occupancy trends.</p>
+        </div>
+        <div class="bg-indigo-950/60 border border-indigo-500/40 rounded-xl px-4 py-2 flex items-center space-x-3">
+          <div class="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold">
+            <i class="fa-solid fa-microchip"></i>
+          </div>
+          <div>
+            <div class="text-[11px] text-indigo-300 font-semibold uppercase">Scikit-Learn Model</div>
+            <div class="text-sm font-bold text-white"><span id="ml-r2-score">97.3%</span> Accuracy (R²)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Predictor Form & Results -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Input Form -->
+        <div class="bg-slate-800/60 border border-slate-700/80 rounded-2xl p-6 backdrop-blur space-y-4">
+          <h3 class="font-bold text-white text-base flex items-center">
+            <i class="fa-solid fa-sliders text-indigo-400 mr-2"></i> Forecast Parameters
+          </h3>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Target Parking Facility</label>
+            <select id="pred-facility" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <option value="loc-1">City Center Mall Parking (MG Road)</option>
+              <option value="loc-2">Apollo Hospital Parking (Bannerghatta)</option>
+              <option value="loc-3">Cyber Tech Park Zone A (Electronic City)</option>
+              <option value="loc-4">Metro Station P1 (Indiranagar)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Target Date</label>
+            <input type="date" id="pred-date" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Target Hour of Day (00:00 - 23:00)</label>
+            <div class="flex items-center space-x-3">
+              <input type="range" id="pred-hour" min="0" max="23" value="18" oninput="updateHourDisplay(this.value)" class="flex-1 accent-indigo-500">
+              <span id="pred-hour-label" class="text-sm font-mono font-bold text-indigo-400 w-16 text-right">18:00</span>
+            </div>
+          </div>
+
+          <button onclick="runPrediction()" class="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-semibold text-sm transition shadow-lg shadow-indigo-600/30 flex items-center justify-center space-x-2">
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+            <span>Run AI Demand Forecast</span>
+          </button>
+        </div>
+
+        <!-- Prediction Result Display -->
+        <div class="lg:col-span-2 bg-slate-800/60 border border-slate-700/80 rounded-2xl p-6 backdrop-blur flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between pb-4 border-b border-slate-700">
+              <div>
+                <h3 class="text-lg font-bold text-white" id="pred-res-title">Demand Forecast</h3>
+                <p class="text-xs text-slate-400" id="pred-res-fac">City Center Mall Parking</p>
+              </div>
+              <span id="pred-badge" class="px-3 py-1 rounded-full text-xs font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                High Demand (Peak)
+              </span>
+            </div>
+
+            <!-- Metric Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
+              <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 text-center">
+                <span class="text-xs text-slate-400">Predicted Occupancy</span>
+                <p class="text-3xl font-extrabold text-white mt-1" id="pred-occupancy">86.4%</p>
+                <div class="w-full bg-slate-800 rounded-full h-2 mt-3 overflow-hidden">
+                  <div id="pred-occupancy-bar" class="bg-indigo-500 h-2 rounded-full" style="width: 86.4%"></div>
+                </div>
+              </div>
+
+              <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 text-center">
+                <span class="text-xs text-slate-400">Estimated Available Slots</span>
+                <p class="text-3xl font-extrabold text-emerald-400 mt-1" id="pred-avail-slots">7 / 50</p>
+                <span class="text-[11px] text-slate-400 mt-2 block">Calculated from AI model</span>
+              </div>
+
+              <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 text-center">
+                <span class="text-xs text-slate-400">AI Advice</span>
+                <p class="text-sm font-bold text-amber-400 mt-2" id="pred-advice">Heavy rush expected. Reserve in advance.</p>
+              </div>
+            </div>
+
+            <!-- Trend Chart -->
+            <div class="mt-6 pt-4 border-t border-slate-800">
+              <span class="text-xs font-semibold text-slate-300">24-Hour Projected Occupancy Trend (%)</span>
+              <div class="h-44 mt-2">
+                <canvas id="pred-trend-chart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 6: ADMIN DASHBOARD (ADMIN PRIVILEGE ONLY) -->
+    <section id="view-admin" class="hidden space-y-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-2xl sm:text-3xl font-extrabold text-white">Administrator Control Center</h1>
+          <p class="text-slate-400 text-sm mt-1">Full management: add locations, manage individual slots, and view records.</p>
+        </div>
+        <button onclick="loadAdminStats()" class="px-3 py-2 rounded-xl bg-slate-800 text-slate-300 border border-slate-700 text-sm">
+          <i class="fa-solid fa-arrows-rotate mr-1"></i> Refresh Stats
+        </button>
+      </div>
+
+      <!-- Summary KPI Cards -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-slate-800/60 border border-slate-700 rounded-2xl p-5">
+          <span class="text-xs text-slate-400">Total Facilities</span>
+          <p class="text-2xl font-black text-white mt-1" id="admin-kpi-facs">4</p>
+          <span class="text-[11px] text-indigo-400 mt-1 block">Active in database</span>
+        </div>
+        <div class="bg-slate-800/60 border border-slate-700 rounded-2xl p-5">
+          <span class="text-xs text-slate-400">Overall Occupancy</span>
+          <p class="text-2xl font-black text-indigo-400 mt-1" id="admin-kpi-occ">34.5%</p>
+          <span class="text-[11px] text-slate-400 mt-1 block" id="admin-kpi-slot-ratio">69 / 200 Slots</span>
+        </div>
+        <div class="bg-slate-800/60 border border-slate-700 rounded-2xl p-5">
+          <span class="text-xs text-slate-400">Active Bookings</span>
+          <p class="text-2xl font-black text-emerald-400 mt-1" id="admin-kpi-bookings">12</p>
+          <span class="text-[11px] text-slate-400 mt-1 block">Confirmed & Checked-in</span>
+        </div>
+        <div class="bg-slate-800/60 border border-slate-700 rounded-2xl p-5">
+          <span class="text-xs text-slate-400">Total Revenue Collected</span>
+          <p class="text-2xl font-black text-amber-400 mt-1" id="admin-kpi-rev">₹ 4,820</p>
+          <span class="text-[11px] text-slate-400 mt-1 block">Digital payments</span>
+        </div>
+      </div>
+
+      <!-- Add New Location Form & Slot Addition Tool -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Add Facility Form -->
+        <div class="bg-slate-800/60 border border-slate-700 rounded-2xl p-6 backdrop-blur space-y-4">
+          <h3 class="font-bold text-white text-base flex items-center">
+            <i class="fa-solid fa-map-location-dot text-indigo-400 mr-2"></i> Add New Parking Location
+          </h3>
+          <form onsubmit="submitNewFacility(event)" class="space-y-3">
+            <div>
+              <label class="block text-xs text-slate-300 mb-1">Facility Name</label>
+              <input type="text" id="new-fac-name" placeholder="e.g. Phoenix Mall Multi-Level" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white" required>
+            </div>
+            <div>
+              <label class="block text-xs text-slate-300 mb-1">Address / Landmark</label>
+              <input type="text" id="new-fac-addr" placeholder="e.g. Whitefield Main Road" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white" required>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-xs text-slate-300 mb-1">Initial Slots</label>
+                <input type="number" id="new-fac-slots" value="30" min="5" max="200" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white" required>
+              </div>
+              <div>
+                <label class="block text-xs text-slate-300 mb-1">Hourly Rate (₹)</label>
+                <input type="number" id="new-fac-rate" value="35" min="10" max="200" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white" required>
+              </div>
+            </div>
+            <button type="submit" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow">
+              Create Facility & Auto-Generate Slots
+            </button>
+          </form>
+        </div>
+
+        <!-- Add Extra Slots to Existing Facility -->
+        <div class="bg-slate-800/60 border border-slate-700 rounded-2xl p-6 backdrop-blur space-y-4">
+          <h3 class="font-bold text-white text-base flex items-center">
+            <i class="fa-solid fa-square-plus text-emerald-400 mr-2"></i> Add New Slot to Location
+          </h3>
+          <form onsubmit="submitNewSlot(event)" class="space-y-3">
+            <div>
+              <label class="block text-xs text-slate-300 mb-1">Select Facility</label>
+              <select id="slot-add-fac" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white" required>
+                <!-- Populated dynamically -->
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs text-slate-300 mb-1">Slot Identifier</label>
+              <input type="text" id="slot-add-num" placeholder="e.g. P-51 or EV-10" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white font-mono uppercase" required>
+            </div>
+            <div>
+              <label class="block text-xs text-slate-300 mb-1">Slot Type</label>
+              <select id="slot-add-type" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+                <option value="Regular">Regular</option>
+                <option value="EV Charging">EV Charging</option>
+                <option value="Accessible">Accessible</option>
+              </select>
+            </div>
+            <button type="submit" class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow">
+              Add Slot to Facility
+            </button>
+          </form>
+        </div>
+
+        <!-- Recent Bookings Table -->
+        <div class="bg-slate-800/60 border border-slate-700 rounded-2xl p-6 backdrop-blur flex flex-col justify-between">
+          <div>
+            <h3 class="font-bold text-white text-base mb-3">Live System Records</h3>
+            <div class="overflow-x-auto max-h-72">
+              <table class="w-full text-left text-xs">
+                <thead class="text-slate-400 border-b border-slate-700 sticky top-0 bg-slate-900/90">
+                  <tr>
+                    <th class="pb-2">ID</th>
+                    <th class="pb-2">Vehicle</th>
+                    <th class="pb-2">Slot</th>
+                    <th class="pb-2 text-right">Fee</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-bookings-tbody" class="divide-y divide-slate-800 text-slate-300">
+                  <!-- Rendered dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <p class="text-[10px] text-slate-500 mt-2">* Real-time database updates from SQLite engine.</p>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ==================== JAVASCRIPT LOGIC ==================== -->
+  <script>
+    // Global User State
+    let currentUser = null;
+    let signupRole = 'user'; // 'user' or 'admin'
+    let facilitiesData = [];
+    let trendChart = null;
+    let selectedFacilityForModal = null;
+
+    // Check Login State On Load
+    function initApp() {
+      const stored = localStorage.getItem('smartpark_user');
+      if (stored) {
+        try {
+          currentUser = JSON.parse(stored);
+          applyUserSession();
+        } catch (e) {
+          localStorage.removeItem('smartpark_user');
+          showLoginView();
+        }
+      } else {
+        showLoginView();
+      }
+    }
+
+    // ------------------- AUTHENTICATION LOGIC -------------------
+
+    function showLoginView() {
+      document.getElementById('auth-container').classList.remove('hidden');
+      document.getElementById('login-card').classList.remove('hidden');
+      document.getElementById('signup-card').classList.add('hidden');
+    }
+
+    function showSignupView() {
+      document.getElementById('auth-container').classList.remove('hidden');
+      document.getElementById('login-card').classList.add('hidden');
+      document.getElementById('signup-card').classList.remove('hidden');
+      selectSignupRole('user'); // default to user
+    }
+
+    function fillDemo(role) {
+      if (role === 'user') {
+        document.getElementById('login-id').value = 'user@example.com';
+        document.getElementById('login-password').value = 'user123';
+      } else {
+        document.getElementById('login-id').value = 'admin@parking.com';
+        document.getElementById('login-password').value = 'admin123';
+      }
+    }
+
+    function selectSignupRole(role) {
+      signupRole = role;
+      const btnUser = document.getElementById('role-btn-user');
+      const btnAdmin = document.getElementById('role-btn-admin');
+      const custFields = document.getElementById('customer-fields');
+      const adminFields = document.getElementById('admin-fields');
+
+      if (role === 'user') {
+        btnUser.className = 'py-2.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center space-x-2 bg-indigo-600 text-white shadow';
+        btnAdmin.className = 'py-2.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center space-x-2 text-slate-400 hover:text-white';
+        custFields.classList.remove('hidden');
+        adminFields.classList.add('hidden');
+      } else {
+        btnAdmin.className = 'py-2.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center space-x-2 bg-indigo-600 text-white shadow';
+        btnUser.className = 'py-2.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center space-x-2 text-slate-400 hover:text-white';
+        custFields.classList.add('hidden');
+        adminFields.classList.remove('hidden');
+      }
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const loginId = document.getElementById('login-id').value.trim();
+      const pwd = document.getElementById('login-password').value.trim();
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ login_id: loginId, password: pwd })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Login failed');
+
+        currentUser = data;
+        localStorage.setItem('smartpark_user', JSON.stringify(currentUser));
+        applyUserSession();
+      } catch (err) {
+        alert('Login Error: ' + err.message);
+      }
+    }
+
+    async function handleSignup(e) {
+      e.preventDefault();
+      const name = document.getElementById('signup-name').value.trim();
+      const pwd = document.getElementById('signup-password').value.trim();
+
+      let email = '';
+      let phone = '';
+
+      if (signupRole === 'user') {
+        email = document.getElementById('signup-email').value.trim();
+        phone = document.getElementById('signup-phone').value.trim();
+        if (!email) {
+          alert('Please enter your email address.');
+          return;
+        }
+      } else {
+        email = document.getElementById('signup-admin-id').value.trim();
+        if (!email) {
+          alert('Please enter your Admin User ID or email.');
+          return;
+        }
+      }
+
+      try {
+        const res = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: name,
+            email: email,
+            password: pwd,
+            phone: phone,
+            role: signupRole
+          })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Signup failed');
+
+        alert('Account created successfully! Signing you in...');
+        currentUser = {
+          user_id: data.user_id,
+          name: data.name,
+          email: data.email,
+          phone: data.phone,
+          role: data.role
+        };
+        localStorage.setItem('smartpark_user', JSON.stringify(currentUser));
+        applyUserSession();
+      } catch (err) {
+        alert('Signup Error: ' + err.message);
+      }
+    }
+
+    function applyUserSession() {
+      // Hide auth overlay
+      document.getElementById('auth-container').classList.add('hidden');
+
+      // Update Nav
+      const initials = currentUser.name ? currentUser.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'U';
+      document.getElementById('nav-avatar').textContent = initials;
+      document.getElementById('drawer-avatar-lg').textContent = initials;
+      document.getElementById('nav-user-name').textContent = currentUser.name;
+      document.getElementById('nav-user-sub').textContent = currentUser.role === 'admin' ? 'Administrator' : 'Customer';
+
+      // Update Role Pill
+      const pill = document.getElementById('role-pill');
+      if (currentUser.role === 'admin') {
+        pill.textContent = 'Administrator';
+        pill.className = 'text-[10px] px-2 py-0.5 ml-1.5 rounded-full bg-indigo-500/20 text-indigo-300 font-semibold border border-indigo-500/30';
+      } else {
+        pill.textContent = 'Customer';
+        pill.className = 'text-[10px] px-2 py-0.5 ml-1.5 rounded-full bg-emerald-500/20 text-emerald-400 font-semibold border border-emerald-500/30';
+      }
+
+      // Update Drawer Fields
+      document.getElementById('drawer-name').textContent = currentUser.name;
+      document.getElementById('drawer-email').textContent = currentUser.email;
+      document.getElementById('drawer-role-badge').textContent = currentUser.role === 'admin' ? 'Administrator Account' : 'Customer Account';
+      document.getElementById('drawer-role-badge').className = currentUser.role === 'admin' ? 'inline-block text-[11px] font-bold px-3 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' : 'inline-block text-[11px] font-bold px-3 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+
+      document.getElementById('account-name-val').textContent = currentUser.name;
+      document.getElementById('account-email-val').textContent = currentUser.email;
+      if (currentUser.phone) {
+        document.getElementById('account-phone-row').classList.remove('hidden');
+        document.getElementById('account-phone-val').textContent = currentUser.phone;
+      } else {
+        document.getElementById('account-phone-row').classList.add('hidden');
+      }
+      document.getElementById('account-role-val').textContent = currentUser.role === 'admin' ? 'Admin (Full Management Access)' : 'Customer (Parking Slot Booking)';
+
+      // Role-Based UI visibility
+      const adminElements = document.querySelectorAll('.admin-only');
+      if (currentUser.role === 'admin') {
+        adminElements.forEach(el => el.classList.remove('hidden'));
+        document.getElementById('admin-add-slot-bar').classList.remove('hidden');
+      } else {
+        adminElements.forEach(el => el.classList.add('hidden'));
+        document.getElementById('admin-add-slot-bar').classList.add('hidden');
+      }
+
+      // Load initial view
+      switchTab('find');
+    }
+
+    // ------------------- DRAWABLE PROFILE DRAWER -------------------
+
+    function openProfileDrawer() {
+      const drawer = document.getElementById('profile-drawer');
+      const backdrop = document.getElementById('drawer-backdrop');
+      backdrop.classList.remove('hidden');
+      setTimeout(() => backdrop.classList.remove('opacity-0'), 10);
+      drawer.classList.remove('translate-x-full');
+    }
+
+    function closeProfileDrawer() {
+      const drawer = document.getElementById('profile-drawer');
+      const backdrop = document.getElementById('drawer-backdrop');
+      backdrop.classList.add('opacity-0');
+      drawer.classList.add('translate-x-full');
+      setTimeout(() => backdrop.classList.add('hidden'), 300);
+    }
+
+    function handleLogout() {
+      localStorage.removeItem('smartpark_user');
+      currentUser = null;
+      closeProfileDrawer();
+      showLoginView();
+    }
+
+    async function confirmDeleteAccount() {
+      if (!confirm(`Warning: Are you sure you want to permanently delete your account (${currentUser.email})? All your reservations will be cancelled.`)) {
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/auth/account?user_id=${currentUser.user_id}`, {
+          method: 'DELETE'
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Failed to delete account');
+
+        alert(data.message);
+        handleLogout();
+      } catch (err) {
+        alert('Delete Account Error: ' + err.message);
+      }
+    }
+
+    // ------------------- APPLICATION TABS & CORE -------------------
+
+    function switchTab(tab) {
+      // Permission check
+      if (currentUser && currentUser.role !== 'admin' && (tab === 'kiosk' || tab === 'admin')) {
+        alert('Access Restricted: This section is available only for Administrators.');
+        tab = 'find';
+      }
+
+      const tabs = ['find', 'reserve', 'tickets', 'kiosk', 'predict', 'admin'];
+      tabs.forEach(t => {
+        document.getElementById(`view-${t}`).classList.add('hidden');
+        const btn = document.getElementById(`tab-${t}`);
+        if (btn) {
+          btn.className = 'nav-btn px-3 py-2 rounded-lg text-sm font-medium transition text-slate-400 hover:text-white hover:bg-slate-800/50';
+        }
+      });
+
+      document.getElementById(`view-${tab}`).classList.remove('hidden');
+      const activeBtn = document.getElementById(`tab-${tab}`);
+      if (activeBtn) {
+        activeBtn.className = 'nav-btn px-3 py-2 rounded-lg text-sm font-medium transition text-indigo-400 bg-slate-800/80';
+      }
+
+      if (tab === 'find') loadFacilities();
+      if (tab === 'reserve') populateBookingFacilities();
+      if (tab === 'tickets') loadUserTickets();
+      if (tab === 'predict') runPrediction();
+      if (tab === 'admin') loadAdminStats();
+    }
+
+    // Load Facilities
+    async function loadFacilities() {
+      const container = document.getElementById('facilities-container');
+      try {
+        const res = await fetch('/api/facilities');
+        facilitiesData = await res.json();
+        renderFacilities(facilitiesData);
+        populateAdminSlotFacilityOptions();
+      } catch (err) {
+        container.innerHTML = `<div class="col-span-full text-center text-rose-400">Failed to load: ${err.message}</div>`;
+      }
+    }
+
+    function renderFacilities(list) {
+      const container = document.getElementById('facilities-container');
+      if (!list.length) {
+        container.innerHTML = '<div class="col-span-full text-center text-slate-500 py-8">No parking facilities found.</div>';
+        return;
+      }
+
+      container.innerHTML = list.map(f => `
+        <div class="bg-slate-800/60 border border-slate-700/80 rounded-2xl overflow-hidden backdrop-blur hover:border-indigo-500/50 transition flex flex-col justify-between group shadow-lg">
+          <div>
+            <div class="relative h-36 bg-slate-900 overflow-hidden">
+              <img src="${f.image_url || 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800'}" alt="${f.location_name}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+              <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent"></div>
+              <span class="absolute top-3 right-3 px-2.5 py-1 rounded-full text-xs font-bold ${f.available_slots > 0 ? 'bg-emerald-500/90 text-white' : 'bg-rose-500/90 text-white'} shadow">
+                ${f.available_slots} Free
+              </span>
+            </div>
+
+            <div class="p-5 space-y-3">
+              <div>
+                <h3 class="font-bold text-white text-base leading-tight">${f.location_name}</h3>
+                <p class="text-xs text-slate-400 mt-1 line-clamp-1"><i class="fa-solid fa-location-dot text-indigo-400 mr-1"></i> ${f.address}</p>
+              </div>
+
+              <div class="flex items-center justify-between text-xs pt-1">
+                <span class="text-slate-400">Tariff:</span>
+                <span class="font-extrabold text-white text-sm">₹${f.hourly_rate} <span class="text-[10px] text-slate-400 font-normal">/ hr</span></span>
+              </div>
+
+              <!-- Occupancy Bar -->
+              <div class="space-y-1">
+                <div class="flex justify-between text-[11px] text-slate-400">
+                  <span>Occupancy</span>
+                  <span class="font-semibold text-slate-200">${f.occupancy_rate}%</span>
+                </div>
+                <div class="w-full bg-slate-900 rounded-full h-2 overflow-hidden">
+                  <div class="h-2 rounded-full ${f.occupancy_rate > 80 ? 'bg-rose-500' : (f.occupancy_rate > 50 ? 'bg-amber-500' : 'bg-emerald-500')}" style="width: ${f.occupancy_rate}%"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="p-5 pt-0 grid grid-cols-2 gap-2">
+            <button onclick="openSlotModal('${f.location_id}')" class="w-full py-2 rounded-xl bg-slate-700/80 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition">
+              <i class="fa-solid fa-border-all mr-1"></i> Live Grid
+            </button>
+            <button onclick="quickReserve('${f.location_id}')" class="w-full py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition">
+              <i class="fa-solid fa-bolt mr-1"></i> Reserve
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function filterFacilities() {
+      const q = document.getElementById('facility-search').value.toLowerCase();
+      const filtered = facilitiesData.filter(f => f.location_name.toLowerCase().includes(q) || f.address.toLowerCase().includes(q));
+      renderFacilities(filtered);
+    }
+
+    // Modal Live Slot Grid
+    async function openSlotModal(locId) {
+      selectedFacilityForModal = locId;
+      const modal = document.getElementById('slot-modal');
+      const grid = document.getElementById('modal-slots-grid');
+      grid.innerHTML = '<div class="col-span-full text-center text-slate-400 py-6">Loading slots...</div>';
+      modal.classList.remove('hidden');
+
+      try {
+        const res = await fetch(`/api/facilities/${locId}`);
+        const data = await res.json();
+        document.getElementById('modal-fac-name').textContent = data.location_name;
+        document.getElementById('modal-fac-address').textContent = data.address;
+
+        grid.innerHTML = data.slots.map(s => {
+          let bg = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30 cursor-pointer';
+          let icon = 'fa-car';
+          if (s.slot_type === 'EV Charging') icon = 'fa-bolt';
+          if (s.slot_type === 'Accessible') icon = 'fa-wheelchair';
+
+          if (s.status === 'Occupied') {
+            bg = 'bg-rose-500/20 text-rose-300 border-rose-500/40 cursor-not-allowed opacity-60';
+          } else if (s.status === 'Reserved') {
+            bg = 'bg-amber-500/20 text-amber-300 border-amber-500/40 cursor-not-allowed opacity-75';
+          }
+
+          const clickAction = s.status === 'Available' ? `onclick="selectSlotForBooking('${locId}', '${s.slot_id}')"` : '';
+
+          return `
+            <div ${clickAction} class="p-2.5 rounded-xl border flex flex-col items-center justify-center transition text-center ${bg}">
+              <i class="fa-solid ${icon} text-sm mb-1"></i>
+              <span class="font-extrabold text-xs">${s.slot_number}</span>
+              <span class="text-[9px] mt-0.5">${s.status}</span>
+            </div>
+          `;
+        }).join('');
+      } catch (err) {
+        grid.innerHTML = `<div class="col-span-full text-center text-rose-400 py-6">Error: ${err.message}</div>`;
+      }
+    }
+
+    function closeSlotModal() {
+      document.getElementById('slot-modal').classList.add('hidden');
+    }
+
+    async function adminAddSlotDirect() {
+      if (!selectedFacilityForModal) return;
+      const num = document.getElementById('admin-new-slot-num').value.trim();
+      const type = document.getElementById('admin-new-slot-type').value;
+      if (!num) return alert('Enter slot number');
+
+      try {
+        const res = await fetch(`/api/facilities/${selectedFacilityForModal}/slots`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ slot_number: num, slot_type: type })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail);
+        alert(data.message);
+        document.getElementById('admin-new-slot-num').value = '';
+        openSlotModal(selectedFacilityForModal);
+        loadFacilities();
+      } catch (err) {
+        alert('Error: ' + err.message);
+      }
+    }
+
+    // Advance Booking
+    async function populateBookingFacilities() {
+      const sel = document.getElementById('book-facility');
+      if (facilitiesData.length === 0) {
+        const res = await fetch('/api/facilities');
+        facilitiesData = await res.json();
+      }
+      sel.innerHTML = '<option value="">-- Choose Facility --</option>' +
+        facilitiesData.map(f => `<option value="${f.location_id}">${f.location_name} (₹${f.hourly_rate}/hr)</option>`).join('');
+    }
+
+    async function onFacilityChangeForBooking() {
+      const facId = document.getElementById('book-facility').value;
+      const slotSel = document.getElementById('book-slot');
+      slotSel.innerHTML = '<option value="">Loading slots...</option>';
+
+      if (!facId) {
+        slotSel.innerHTML = '<option value="">-- Choose Slot --</option>';
+        return;
+      }
+
+      const res = await fetch(`/api/facilities/${facId}`);
+      const data = await res.json();
+      const availSlots = data.slots.filter(s => s.status === 'Available');
+
+      if (!availSlots.length) {
+        slotSel.innerHTML = '<option value="">No available slots in this facility</option>';
+        return;
+      }
+
+      slotSel.innerHTML = '<option value="">-- Select Available Slot --</option>' +
+        availSlots.map(s => `<option value="${s.slot_id}">${s.slot_number} (${s.slot_type})</option>`).join('');
+    }
+
+    function quickReserve(locId) {
+      switchTab('reserve');
+      setTimeout(() => {
+        const sel = document.getElementById('book-facility');
+        sel.value = locId;
+        onFacilityChangeForBooking();
+      }, 100);
+    }
+
+    function selectSlotForBooking(locId, slotId) {
+      closeSlotModal();
+      switchTab('reserve');
+      setTimeout(() => {
+        const sel = document.getElementById('book-facility');
+        sel.value = locId;
+        onFacilityChangeForBooking().then(() => {
+          document.getElementById('book-slot').value = slotId;
+        });
+      }, 100);
+    }
+
+    async function submitBooking(e) {
+      e.preventDefault();
+      if (!currentUser) {
+        alert('Please login first to reserve a parking slot.');
+        showLoginView();
+        return;
+      }
+
+      const payload = {
+        user_id: currentUser.user_id,
+        location_id: document.getElementById('book-facility').value,
+        slot_id: document.getElementById('book-slot').value,
+        vehicle_number: document.getElementById('book-veh-num').value,
+        start_time: document.getElementById('book-start-time').value,
+        end_time: document.getElementById('book-end-time').value
+      };
+
+      try {
+        const res = await fetch('/api/bookings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Booking failed');
+
+        // Show Success
+        const successBox = document.getElementById('booking-success-box');
+        successBox.classList.remove('hidden');
+        document.getElementById('success-msg').innerHTML = `
+          Booking ID: <strong class="text-white">${data.booking_id}</strong> • Slot: <strong class="text-white">${data.slot_number}</strong><br>
+          Amount Paid: ₹${data.amount} (${data.duration_hours} hrs)
+        `;
+        document.getElementById('success-qr-img').src = data.qr_code_url;
+        document.getElementById('kiosk-booking-id').value = data.booking_id;
+
+        loadFacilities();
+      } catch (err) {
+        alert('Booking Error: ' + err.message);
+      }
+    }
+
+    // My Tickets
+    async function loadUserTickets() {
+      if (!currentUser) return;
+      const container = document.getElementById('tickets-container');
+      container.innerHTML = '<div class="col-span-full text-center text-slate-400 py-8">Loading your tickets...</div>';
+
+      try {
+        const res = await fetch(`/api/bookings/my?user_id=${currentUser.user_id}`);
+        const tickets = await res.json();
+
+        if (!tickets.length) {
+          container.innerHTML = '<div class="col-span-full text-center text-slate-500 py-12">No bookings found. Reserve a slot to view your ticket.</div>';
+          return;
+        }
+
+        container.innerHTML = tickets.map(t => `
+          <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-5 backdrop-blur flex flex-col justify-between shadow-xl space-y-4">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-700/80">
+              <div>
+                <span class="text-[10px] uppercase font-bold tracking-wider text-indigo-400">Digital QR Pass</span>
+                <h4 class="font-bold text-white text-base leading-tight">${t.facility_name}</h4>
+              </div>
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold ${t.status === 'Confirmed' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : (t.status === 'Checked-in' ? 'bg-amber-500/20 text-amber-400' : 'bg-slate-700 text-slate-300')}">
+                ${t.status}
+              </span>
+            </div>
+
+            <div class="flex items-center space-x-4">
+              <div class="bg-white p-2 rounded-xl shadow shrink-0">
+                <img src="${t.qr_data_url || ''}" class="w-24 h-24" alt="QR">
+              </div>
+              <div class="text-xs space-y-1 text-slate-300">
+                <div><span class="text-slate-400">ID:</span> <span class="font-mono font-bold text-white">${t.booking_id}</span></div>
+                <div><span class="text-slate-400">Slot:</span> <span class="font-extrabold text-indigo-300 text-sm">${t.slot_number}</span> (${t.slot_type})</div>
+                <div><span class="text-slate-400">Vehicle:</span> <span class="font-mono text-white">${t.vehicle_number}</span></div>
+                <div><span class="text-slate-400">Fee:</span> <span class="font-bold text-emerald-400">₹${t.amount}</span></div>
+              </div>
+            </div>
+
+            <div class="pt-2 text-[11px] text-slate-400 border-t border-slate-700/80 flex justify-between items-center">
+              <span>Valid: ${t.start_time}</span>
+              ${t.status === 'Confirmed' ? `
+                <button onclick="cancelBooking('${t.booking_id}')" class="text-rose-400 hover:text-rose-300 font-semibold">
+                  Cancel
+                </button>
+              ` : ''}
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        container.innerHTML = `<div class="col-span-full text-center text-rose-400 py-8">Failed to load tickets: ${err.message}</div>`;
+      }
+    }
+
+    async function cancelBooking(id) {
+      if (!confirm(`Are you sure you want to cancel booking ${id}?`)) return;
+      try {
+        const res = await fetch(`/api/bookings/${id}/cancel`, { method: 'POST' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail);
+        alert(data.message);
+        loadUserTickets();
+        loadFacilities();
+      } catch (err) {
+        alert('Cancellation error: ' + err.message);
+      }
+    }
+
+    // Kiosk Operations (Admin)
+    async function fetchKioskBooking() {
+      const bId = document.getElementById('kiosk-booking-id').value.trim();
+      if (!bId) return;
+
+      try {
+        const res = await fetch(`/api/bookings/${bId}`);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Booking not found');
+
+        document.getElementById('kiosk-status').textContent = data.status;
+        document.getElementById('kiosk-slot').textContent = data.slot_number;
+        document.getElementById('kiosk-veh').textContent = data.vehicle_number;
+        document.getElementById('kiosk-fac').textContent = data.facility_name;
+
+        showKioskAlert(`Verified Booking ${bId} for ${data.user_name} (${data.vehicle_number})`, 'emerald');
+      } catch (err) {
+        showKioskAlert(err.message, 'rose');
+      }
+    }
+
+    async function kioskCheckIn() {
+      const bId = document.getElementById('kiosk-booking-id').value.trim();
+      try {
+        const res = await fetch('/api/sessions/checkin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ booking_id: bId })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Check-in failed');
+
+        showKioskAlert(`🟢 ${data.message} Entry time recorded: ${data.entry_time}`, 'emerald');
+        document.getElementById('kiosk-status').textContent = 'Checked-in';
+        loadFacilities();
+      } catch (err) {
+        showKioskAlert('❌ ' + err.message, 'rose');
+      }
+    }
+
+    async function kioskCheckOut() {
+      const bId = document.getElementById('kiosk-booking-id').value.trim();
+      try {
+        const res = await fetch('/api/sessions/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ booking_id: bId })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Check-out failed');
+
+        showKioskAlert(`🏁 ${data.message}<br>Duration: <strong>${data.duration_formatted}</strong> • Final Bill: <strong>₹${data.total_amount}</strong>`, 'violet');
+        document.getElementById('kiosk-status').textContent = 'Completed';
+        loadFacilities();
+      } catch (err) {
+        showKioskAlert('❌ ' + err.message, 'rose');
+      }
+    }
+
+    function showKioskAlert(msg, color) {
+      const box = document.getElementById('kiosk-gate-alert');
+      box.classList.remove('hidden');
+      box.className = `p-4 rounded-xl border text-sm flex items-start space-x-3 bg-${color}-950/60 border-${color}-500/40 text-${color}-200`;
+      document.getElementById('kiosk-alert-text').innerHTML = msg;
+    }
+
+    // AI Prediction
+    function updateHourDisplay(val) {
+      document.getElementById('pred-hour-label').textContent = `${String(val).padStart(2, '0')}:00`;
+    }
+
+    async function runPrediction() {
+      const locId = document.getElementById('pred-facility').value;
+      const targetDate = document.getElementById('pred-date').value || new Date().toISOString().split('T')[0];
+      const targetHour = parseInt(document.getElementById('pred-hour').value);
+
+      try {
+        const res = await fetch('/api/predict', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            location_id: locId,
+            target_date: targetDate,
+            target_hour: targetHour
+          })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Prediction failed');
+
+        document.getElementById('pred-res-title').textContent = `Demand Forecast for ${data.day_name}, ${data.target_hour}`;
+        document.getElementById('pred-res-fac').textContent = data.location_name;
+        document.getElementById('pred-occupancy').textContent = `${data.predicted_occupancy_percent}%`;
+        document.getElementById('pred-occupancy-bar').style.width = `${data.predicted_occupancy_percent}%`;
+        document.getElementById('pred-avail-slots').textContent = `${data.predicted_available_slots} / ${data.total_slots}`;
+        document.getElementById('pred-advice').textContent = data.advice;
+
+        const badge = document.getElementById('pred-badge');
+        badge.textContent = data.demand_level;
+        badge.className = `px-3 py-1 rounded-full text-xs font-bold bg-${data.badge_color}-500/20 text-${data.badge_color}-400 border border-${data.badge_color}-500/30`;
+
+        render24HrTrend(locId, targetDate, targetHour);
+      } catch (err) {
+        console.error('Prediction error:', err);
+      }
+    }
+
+    async function render24HrTrend(locId, dateStr, currentHour) {
+      const hours = Array.from({ length: 24 }, (_, i) => `${i}:00`);
+      const promises = Array.from({ length: 24 }, (_, h) =>
+        fetch('/api/predict', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ location_id: locId, target_date: dateStr, target_hour: h })
+        }).then(r => r.json())
+      );
+
+      const allPreds = await Promise.all(promises);
+      const values = allPreds.map(p => p.predicted_occupancy_percent);
+
+      const ctx = document.getElementById('pred-trend-chart').getContext('2d');
+      if (trendChart) trendChart.destroy();
+
+      trendChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: hours,
+          datasets: [{
+            label: 'Predicted Occupancy %',
+            data: values,
+            borderColor: '#6366f1',
+            backgroundColor: 'rgba(99, 102, 241, 0.15)',
+            fill: true,
+            tension: 0.35,
+            pointRadius: (ctx) => ctx.dataIndex === currentHour ? 6 : 2,
+            pointBackgroundColor: (ctx) => ctx.dataIndex === currentHour ? '#f59e0b' : '#6366f1'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { min: 0, max: 100, grid: { color: 'rgba(255, 255, 255, 0.05)' } },
+            x: { grid: { color: 'transparent' } }
+          }
+        }
+      });
+    }
+
+    // Admin Dashboard
+    async function loadAdminStats() {
+      try {
+        const statsRes = await fetch('/api/admin/stats');
+        const stats = await statsRes.json();
+
+        document.getElementById('admin-kpi-facs').textContent = stats.total_facilities;
+        document.getElementById('admin-kpi-occ').textContent = `${stats.occupancy_percentage}%`;
+        document.getElementById('admin-kpi-slot-ratio').textContent = `${stats.occupied_slots + stats.reserved_slots} / ${stats.total_slots} Slots`;
+        document.getElementById('admin-kpi-bookings').textContent = stats.active_bookings;
+        document.getElementById('admin-kpi-rev').textContent = `₹ ${stats.total_revenue.toLocaleString()}`;
+
+        // Load Bookings Table
+        const bookRes = await fetch('/api/admin/bookings');
+        const bookings = await bookRes.json();
+        const tbody = document.getElementById('admin-bookings-tbody');
+
+        tbody.innerHTML = bookings.map(b => `
+          <tr class="hover:bg-slate-800/40 transition">
+            <td class="py-2.5 font-mono text-white">${b.booking_id}</td>
+            <td class="py-2.5 font-mono text-slate-300">${b.vehicle_number}</td>
+            <td class="py-2.5">${b.facility} <span class="text-indigo-400 font-semibold">(${b.slot})</span></td>
+            <td class="py-2.5 text-right font-bold text-white">₹${b.amount}</td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        console.error('Failed to load admin stats:', err);
+      }
+    }
+
+    function populateAdminSlotFacilityOptions() {
+      const sel = document.getElementById('slot-add-fac');
+      if (!sel) return;
+      sel.innerHTML = facilitiesData.map(f => `<option value="${f.location_id}">${f.location_name}</option>`).join('');
+    }
+
+    async function submitNewFacility(e) {
+      e.preventDefault();
+      const payload = {
+        name: document.getElementById('new-fac-name').value.trim(),
+        address: document.getElementById('new-fac-addr').value.trim(),
+        total_slots: parseInt(document.getElementById('new-fac-slots').value),
+        hourly_rate: parseFloat(document.getElementById('new-fac-rate').value)
+      };
+
+      try {
+        const res = await fetch('/api/facilities', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail);
+        alert('Facility created successfully with live slots!');
+        document.getElementById('new-fac-name').value = '';
+        document.getElementById('new-fac-addr').value = '';
+        loadAdminStats();
+        loadFacilities();
+      } catch (err) {
+        alert('Creation error: ' + err.message);
+      }
+    }
+
+    async function submitNewSlot(e) {
+      e.preventDefault();
+      const locId = document.getElementById('slot-add-fac').value;
+      const num = document.getElementById('slot-add-num').value.trim();
+      const type = document.getElementById('slot-add-type').value;
+
+      try {
+        const res = await fetch(`/api/facilities/${locId}/slots`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ slot_number: num, slot_type: type })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail);
+        alert(data.message);
+        document.getElementById('slot-add-num').value = '';
+        loadFacilities();
+        loadAdminStats();
+      } catch (err) {
+        alert('Add Slot Error: ' + err.message);
+      }
+    }
+
+    // Initialize on page load
+    window.addEventListener('DOMContentLoaded', () => {
+      // Set Default Date & Times
+      const now = new Date();
+      const todayStr = now.toISOString().split('T')[0];
+      const dateElem = document.getElementById('pred-date');
+      if (dateElem) dateElem.value = todayStr;
+
+      const startDefault = new Date(now.getTime() + 30 * 60000);
+      const endDefault = new Date(now.getTime() + 150 * 60000);
+      document.getElementById('book-start-time').value = startDefault.toISOString().slice(0, 16);
+      document.getElementById('book-end-time').value = endDefault.toISOString().slice(0, 16);
+
+      initApp();
+    });
+  </script>
+</body>
+</html>
