@@ -11,7 +11,7 @@ if (-not (Test-Path ".venv\Scripts\python.exe")) {
     exit 1
 }
 
-Write-Host "Launching server at http://127.0.0.1:8000 ..." -ForegroundColor Yellow
+Write-Host "Launching server at http://127.0.0.1:0000 ..." -ForegroundColor Yellow
 Write-Host "Press Ctrl+C to stop the server.`n" -ForegroundColor DarkGray
 
 & ".\.venv\Scripts\python.exe" -m uvicorn main:app --host 127.0.0.1 --port 8000
