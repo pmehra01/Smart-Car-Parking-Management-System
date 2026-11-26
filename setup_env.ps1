@@ -1,4 +1,4 @@
-Set-Location 'C:\Users\pramo\.gemini\antigravity\scratch\smart_parking'
+Set-Location 'C:\Users\pramod\smart_parking'
 Write-Output 'Creating virtual environment...'
 python -m venv .venv
 if (-not (Test-Path '.venv\Scripts\python.exe')) {
